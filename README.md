@@ -44,7 +44,47 @@ Visit our landing page at: [https://kdridi.github.io/segy-analysis](https://kdri
 
 ## 🤝 Contributing
 
-We welcome contributions! Please feel free to submit issues or pull requests.
+We welcome contributions from developers, geophysicists, and researchers! Here's how you can help:
+
+### For Developers
+
+**Bug Reports:**
+- Open an issue with a clear title and description
+- Include steps to reproduce and expected behavior
+- Add screenshots if relevant
+
+**Feature Requests:**
+- Open an issue describing the feature and use case
+- Explain why it would be valuable
+
+**Pull Requests:**
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes with clear commit messages
+4. Test thoroughly (try all sample files!)
+5. Submit a pull request with a description of changes
+
+**Code Style:**
+- Keep it simple and maintainable
+- Add comments for complex logic
+- Test across different browsers
+
+### For Geophysicists & Researchers
+
+We need your expertise! Help us by:
+- Testing with real SEG-Y files from your projects
+- Reporting format incompatibilities
+- Suggesting geophysical features
+- Improving documentation
+
+### Sample Data
+
+We include sample SEG-Y files for testing:
+- `sample_2d_small.sgy` (72KB) - Quick tests
+- `sample_2d_medium.sgy` (420KB) - Standard demo
+- `sample_2d_hires.sgy` (408KB) - High-resolution
+
+Feel free to contribute additional sample files with different characteristics!
 
 ## 📄 License
 

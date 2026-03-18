@@ -24,10 +24,11 @@ wheels/
 *.egg
 
 # Data files (large SEG-Y files)
+# But keep sample files for the demo repo
 *.sgy
 *.segy
-data/*.sgy
-data/*.segy
+!data/segy-samples/*.sgy
+!data/segy-samples/*.segy
 
 # IDE
 .vscode/
