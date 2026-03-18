@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEG-Y Seismic Data Viewer</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #60a5fa;
+        }
+        .upload-section {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .file-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        input[type="file"] {
+            background: #334155;
+            padding: 10px;
+            border-radius: 4px;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+        }
+        .info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        .info-item {
+            background: #334155;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .info-label {
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .info-value {
+            color: #f1f5f9;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .viewer-section {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .canvas-container {
+            position: relative;
+            overflow: auto;
+            max-height: 70vh;
+            background: #000;
+            border-radius: 4px;
+        }
+        canvas {
+            display: block;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        label {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        input[type="range"] {
+            width: 120px;
+        }
+        .colormap-select {
+            padding: 6px;
+            border-radius: 4px;
+            background: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+        .loading.active { display: block; }
+        .error {
+            background: #7f1d1d;
+            color: #fecaca;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 15px;
+            display: none;
+        }
+        .error.active { display: block; }
+        .status {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SEG-Y Seismic Data Viewer</h1>
+
+        <div class="upload-section">
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".sgy,.segy">
+                <button id="loadBtn">Load SEG-Y File</button>
+                <button id="loadSampleBtn">Load Sample Data</button>
+            </div>
+            <div class="status" id="status">Select a .sgy file to visualize</div>
+            <div class="error" id="error"></div>
+            <div class="info" id="info"></div>
+        </div>
+
+        <div class="viewer-section">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Gain:</label>
+                    <input type="range" id="gainSlider" min="0.1" max="10" step="0.1" value="1">
+                    <span id="gainValue">1.0</span>
+                </div>
+                <div class="control-group">
+                    <label>Clip %:</label>
+                    <input type="range" id="clipSlider" min="0" max="50" step="1" value="5">
+                    <span id="clipValue">5%</span>
+                </div>
+                <div class="control-group">
+                    <label>Colormap:</label>
+                    <select id="colormap" class="colormap-select">
+                        <option value="seismic">Seismic (Red-White-Blue)</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="density">Density (White-Black)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Display:</label>
+                    <select id="displayMode" class="colormap-select">
+                        <option value="wiggle">Wiggle + Fill</option>
+                        <option value="variable">Variable Area</option>
+                        <option value="image">Image Only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="seismicCanvas"></canvas>
+                <div class="loading" id="loading">Loading SEG-Y data...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SEG-Y Parser and Viewer
+        class SegyViewer {
+            constructor() {
+                this.canvas = document.getElementById('seismicCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.data = null;
+                this.textHeader = '';
+                this.binaryHeader = null;
+                this.traces = [];
+                this.gain = 1.0;
+                this.clipPercent = 5;
+                this.colormap = 'seismic';
+                this.displayMode = 'wiggle';
+
+                this.setupControls();
+            }
+
+            setupControls() {
+                document.getElementById('loadBtn').addEventListener('click', () => this.loadFile());
+                document.getElementById('loadSampleBtn').addEventListener('click', () => this.loadSampleData());
+                document.getElementById('gainSlider').addEventListener('input', (e) => {
+                    this.gain = parseFloat(e.target.value);
+                    document.getElementById('gainValue').textContent = this.gain.toFixed(1);
+                    if (this.traces.length) this.render();
+                });
+                document.getElementById('clipSlider').addEventListener('input', (e) => {
+                    this.clipPercent = parseInt(e.target.value);
+                    document.getElementById('clipValue').textContent = this.clipPercent + '%';
+                    if (this.traces.length) this.render();
+                });
+                document.getElementById('colormap').addEventListener('change', (e) => {
+                    this.colormap = e.target.value;
+                    if (this.traces.length) this.render();
+                });
+                document.getElementById('displayMode').addEventListener('change', (e) => {
+                    this.displayMode = e.target.value;
+                    if (this.traces.length) this.render();
+                });
+            }
+
+            showStatus(msg) {
+                document.getElementById('status').textContent = msg;
+            }
+
+            showError(msg) {
+                const el = document.getElementById('error');
+                el.textContent = msg;
+                el.classList.add('active');
+            }
+
+            hideError() {
+                document.getElementById('error').classList.remove('active');
+            }
+
+            setLoading(active) {
+                document.getElementById('loading').classList.toggle('active', active);
+            }
+
+            updateInfo(info) {
+                const container = document.getElementById('info');
+                container.innerHTML = Object.entries(info)
+                    .map(([label, value]) => `
+                        <div class="info-item">
+                            <div class="info-label">${label}</div>
+                            <div class="info-value">${value}</div>
+                        </div>
+                    `).join('');
+            }
+
+            async loadFile() {
+                const input = document.getElementById('fileInput');
+                if (!input.files[0]) {
+                    this.showError('Please select a file first');
+                    return;
+                }
+                this.hideError();
+                this.setLoading(true);
+                this.showStatus(`Loading ${input.files[0].name}...`);
+
+                try {
+                    const buffer = await input.files[0].arrayBuffer();
+                    await this.parseSegy(new DataView(buffer));
+                    this.showStatus(`Loaded ${this.traces.length} traces`);
+                } catch (e) {
+                    this.showError('Failed to load file: ' + e.message);
+                }
+                this.setLoading(false);
+            }
+
+            async loadSampleData() {
+                this.hideError();
+                this.setLoading(true);
+                this.showStatus('Generating sample SEG-Y data...');
+
+                // Generate synthetic seismic data
+                await this.generateSyntheticData();
+                this.showStatus(`Generated ${this.traces.length} traces`);
+                this.setLoading(false);
+            }
+
+            async generateSyntheticData() {
+                // Create synthetic 2D seismic section
+                const numTraces = 100;
+                const numSamples = 500;
+                const sampleInterval = 0.004; // 4ms
+
+                this.traces = [];
+                this.textHeader = 'Synthetic SEG-Y generated by browser viewer';
+
+                for (let i = 0; i < numTraces; i++) {
+                    const samples = new Float32Array(numSamples);
+                    const x = i / numTraces;
+
+                    for (let j = 0; j < numSamples; j++) {
+                        const t = j / numSamples;
+                        let value = 0;
+
+                        // Layer 1: Dipping event
+                        const depth1 = 0.2 + x * 0.3;
+                        const dist1 = Math.abs(t - depth1);
+                        value += 0.8 * Math.exp(-dist1 * 100) * Math.sin(dist1 * 50);
+
+                        // Layer 2: Horizontal event
+                        const depth2 = 0.5;
+                        const dist2 = Math.abs(t - depth2);
+                        value += 0.6 * Math.exp(-dist2 * 80) * Math.sin(dist2 * 40);
+
+                        // Layer 3: Curved event (anticline)
+                        const depth3 = 0.75 + 0.1 * Math.sin(x * Math.PI);
+                        const dist3 = Math.abs(t - depth3);
+                        value += 0.5 * Math.exp(-dist3 * 60) * Math.sin(dist3 * 30);
+
+                        // Add some noise
+                        value += (Math.random() - 0.5) * 0.05;
+
+                        samples[j] = value;
+                    }
+
+                    this.traces.push({
+                        x: i * 50, // 50m spacing
+                        samples: samples,
+                        header: { traceNumber: i + 1 }
+                    });
+                }
+
+                this.binaryHeader = {
+                    numSamples: numSamples,
+                    sampleInterval: sampleInterval * 1000000 // microseconds
+                };
+
+                this.updateInfo({
+                    'Traces': numTraces,
+                    'Samples/Trace': numSamples,
+                    'Sample Interval': `${sampleInterval * 1000} ms`,
+                    'Data Type': 'Synthetic'
+                });
+
+                this.render();
+            }
+
+            async parseSegy(dataView) {
+                // Parse SEG-Y text header (3200 bytes)
+                const textHeaderBytes = new Uint8Array(dataView.buffer, 0, 3200);
+                this.textHeader = this.decodeTextHeader(textHeaderBytes);
+
+                // Parse binary header (400 bytes)
+                this.binaryHeader = this.parseBinaryHeader(dataView);
+
+                // Parse traces
+                this.traces = [];
+                let offset = 3600; // Text + binary header
+
+                const maxTraces = 10000; // Limit for browser performance
+                let traceCount = 0;
+
+                while (offset < dataView.byteLength - 240 && traceCount < maxTraces) {
+                    const trace = this.parseTrace(dataView, offset);
+                    if (trace) {
+                        this.traces.push(trace);
+                        traceCount++;
+                        offset += 240 + trace.samples.length * 4; // 4 bytes per float
+                    } else {
+                        break;
+                    }
+                }
+
+                if (this.traces.length === 0) {
+                    throw new Error('No valid traces found');
+                }
+
+                this.updateInfo({
+                    'Traces': this.traces.length,
+                    'Samples/Trace': this.binaryHeader.numSamples || this.traces[0].samples.length,
+                    'Sample Interval': `${(this.binaryHeader.sampleInterval || 4000) / 1000} ms`,
+                    'Format': 'IEEE Float (Rev 2)'
+                });
+
+                this.render();
+            }
+
+            decodeTextHeader(bytes) {
+                // SEG-Y uses 40-byte lines, 3200 total
+                let text = '';
+                for (let i = 0; i < 3200; i += 80) {
+                    const line = String.fromCharCode(...bytes.subarray(i, i + 80));
+                    // Check for EBCDIC (common in older files)
+                    if (line.charCodeAt(0) > 127) {
+                        text += this.ebcdicToAscii(bytes.subarray(i, i + 80)) + '\n';
+                    } else {
+                        text += line + '\n';
+                    }
+                }
+                return text;
+            }
+
+            ebcdicToAscii(bytes) {
+                const table = {
+                    0x40: ' ', 0x4A: '.', 0xC1: 'A', 0xC2: 'B', 0xC3: 'C', 0xC4: 'D', 0xC5: 'E',
+                    0xC6: 'F', 0xC7: 'G', 0xC8: 'H', 0xC9: 'I', 0xD1: 'J', 0xD2: 'K', 0xD3: 'L',
+                    0xD4: 'M', 0xD5: 'N', 0xD6: 'O', 0xD7: 'P', 0xD8: 'Q', 0xD9: 'R', 0xE2: 'S',
+                    0xE3: 'T', 0xE4: 'U', 0xE5: 'V', 0xE6: 'W', 0xE7: 'X', 0xE8: 'Y', 0xE9: 'Z'
+                };
+                return Array.from(bytes).map(b => table[b] || '?').join('');
+            }
+
+            parseBinaryHeader(dataView) {
+                const offset = 3200;
+                return {
+                    numSamples: dataView.getInt32(offset + 22, true),
+                    sampleInterval: dataView.getInt16(offset + 16, true)
+                };
+            }
+
+            parseTrace(dataView, offset) {
+                // Trace header (240 bytes)
+                const traceNumber = dataView.getInt32(offset + 0, true);
+                const numSamples = dataView.getInt16(offset + 114, true) || this.binaryHeader?.numSamples;
+
+                if (!numSamples || numSamples < 1 || numSamples > 100000) {
+                    return null;
+                }
+
+                // Trace data (float32)
+                const dataOffset = offset + 240;
+                const samples = new Float32Array(numSamples);
+
+                for (let i = 0; i < numSamples; i++) {
+                    samples[i] = dataView.getFloat32(dataOffset + i * 4, true);
+                }
+
+                return {
+                    x: traceNumber,
+                    samples: samples,
+                    header: { traceNumber }
+                };
+            }
+
+            render() {
+                if (!this.traces.length) return;
+
+                const numTraces = this.traces.length;
+                const numSamples = this.traces[0].samples.length;
+
+                // Calculate display parameters
+                const traceWidth = Math.max(2, Math.floor(800 / numTraces));
+                const sampleHeight = Math.max(1, Math.floor(600 / numSamples));
+
+                const canvasWidth = numTraces * traceWidth + 100;
+                const canvasHeight = numSamples * sampleHeight + 50;
+
+                this.canvas.width = canvasWidth;
+                this.canvas.height = canvasHeight;
+
+                // Clear canvas
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                // Calculate clipping values
+                let allValues = [];
+                this.traces.forEach(t => allValues.push(...t.samples));
+                allValues.sort((a, b) => Math.abs(a) - Math.abs(b));
+                const clipIndex = Math.floor(allValues.length * (1 - this.clipPercent / 100));
+                const clipValue = Math.abs(allValues[clipIndex]) || 1;
+
+                // Render based on display mode
+                if (this.displayMode === 'image') {
+                    this.renderImage(traceWidth, sampleHeight, clipValue);
+                } else {
+                    this.renderWiggle(traceWidth, sampleHeight, clipValue);
+                }
+
+                // Draw labels
+                this.drawLabels(numTraces, numSamples, traceWidth, sampleHeight);
+            }
+
+            renderImage(traceWidth, sampleHeight, clipValue) {
+                const numTraces = this.traces.length;
+                const numSamples = this.traces[0].samples.length;
+
+                for (let i = 0; i < numTraces; i++) {
+                    const trace = this.traces[i];
+                    for (let j = 0; j < numSamples; j++) {
+                        const value = trace.samples[j] * this.gain / clipValue;
+                        const clamped = Math.max(-1, Math.min(1, value));
+                        const color = this.getColor(clamped);
+                        this.ctx.fillStyle = color;
+                        this.ctx.fillRect(
+                            50 + i * traceWidth,
+                            25 + j * sampleHeight,
+                            traceWidth + 1,
+                            sampleHeight + 1
+                        );
+                    }
+                }
+            }
+
+            renderWiggle(traceWidth, sampleHeight, clipValue) {
+                const numTraces = this.traces.length;
+                const numSamples = this.traces[0].samples.length;
+                const baseX = 50;
+                const topY = 25;
+
+                for (let i = 0; i < numTraces; i++) {
+                    const trace = this.traces[i];
+                    const centerX = baseX + i * traceWidth;
+
+                    this.ctx.beginPath();
+                    this.ctx.strokeStyle = '#fff';
+                    this.ctx.lineWidth = 0.5;
+
+                    for (let j = 0; j < numSamples; j++) {
+                        const value = trace.samples[j] * this.gain / clipValue;
+                        const x = centerX + value * traceWidth * 0.8;
+                        const y = topY + j * sampleHeight;
+
+                        if (j === 0) {
+                            this.ctx.moveTo(x, y);
+                        } else {
+                            this.ctx.lineTo(x, y);
+                        }
+                    }
+                    this.ctx.stroke();
+
+                    // Variable area fill (positive values)
+                    if (this.displayMode !== 'wiggle') {
+                        this.ctx.beginPath();
+                        this.ctx.fillStyle = this.getColor(0.3);
+                        this.ctx.moveTo(centerX, topY);
+
+                        for (let j = 0; j < numSamples; j++) {
+                            const value = trace.samples[j] * this.gain / clipValue;
+                            if (value > 0) {
+                                const x = centerX + value * traceWidth * 0.8;
+                                const y = topY + j * sampleHeight;
+                                this.ctx.lineTo(x, y);
+                            } else {
+                                this.ctx.lineTo(centerX, topY + j * sampleHeight);
+                            }
+                        }
+
+                        this.ctx.lineTo(centerX, topY + numSamples * sampleHeight);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                    }
+                }
+            }
+
+            getColor(value) {
+                // value is -1 to 1
+                const v = Math.max(-1, Math.min(1, value));
+
+                switch (this.colormap) {
+                    case 'grayscale':
+                        const gray = Math.floor((v + 1) * 127.5);
+                        return `rgb(${gray}, ${gray}, ${gray})`;
+
+                    case 'density':
+                        const d = Math.floor((v + 1) * 127.5);
+                        return `rgb(${d}, ${d}, ${d})`;
+
+                    case 'seismic':
+                    default:
+                        // Red-white-blue colormap
+                        if (v < 0) {
+                            // Blue to white
+                            const b = Math.floor(255 + v * 255);
+                            return `rgb(255, 255, ${b})`;
+                        } else {
+                            // White to red
+                            const r = Math.floor(255 - v * 255);
+                            return `rgb(${r}, 255, 255)`;
+                        }
+                }
+            }
+
+            drawLabels(numTraces, numSamples, traceWidth, sampleHeight) {
+                this.ctx.fillStyle = '#64748b';
+                this.ctx.font = '10px monospace';
+
+                // Trace numbers
+                for (let i = 0; i < numTraces; i += Math.ceil(numTraces / 10)) {
+                    const traceNum = this.traces[i].header.traceNumber || i + 1;
+                    this.ctx.fillText(traceNum.toString(), 50 + i * traceWidth, 20);
+                }
+
+                // Time/depth axis
+                const baseX = 5;
+                for (let j = 0; j < numSamples; j += Math.ceil(numSamples / 10)) {
+                    const time = j * (this.binaryHeader?.sampleInterval || 4000) / 1000;
+                    this.ctx.fillText(time.toString(), baseX, 30 + j * sampleHeight);
+                }
+
+                // Axis labels
+                this.ctx.fillText('Time (ms)', baseX, 15);
+            }
+        }
+
+        // Initialize viewer
+        const viewer = new SegyViewer();
+    </script>
+</body>
+</html>
