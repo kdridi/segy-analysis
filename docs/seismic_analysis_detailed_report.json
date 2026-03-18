@@ -1,0 +1,67 @@
+{
+  "analysis_metadata": {
+    "analyst": "Geoscience Analyst Agent",
+    "date": "2026-03-18",
+    "data_file": "sample_2d_hires.sgy"
+  },
+  "data_info": {
+    "num_traces": 50,
+    "num_samples": 2000,
+    "sample_interval_ms": 1.0,
+    "total_duration_s": 2.0
+  },
+  "statistics": {
+    "mean": 0.04594015192675447,
+    "std": 0.20789906082003382,
+    "min": -0.22304540872573853,
+    "max": 1.1744375228881836,
+    "rms": 0.21291434204605714
+  },
+  "detection_methods_used": [
+    "Amplitude anomaly detection (statistical threshold)",
+    "Structural high identification",
+    "Frequency/attribute analysis"
+  ],
+  "prospects": [
+    {
+      "prospect_id": "P-01",
+      "trace_number": 28,
+      "time_seconds": 1.2,
+      "depth_meters": 2400.0,
+      "amplitude": 3.788308262544137,
+      "confidence_score": 0.6,
+      "detection_method": "frequency",
+      "method_agreement": 1,
+      "interpretation": "Detected via Frequency/attribute analysis Lower-confidence target requiring additional validation. May represent subtle geological feature."
+    },
+    {
+      "prospect_id": "P-02",
+      "trace_number": 0,
+      "time_seconds": 1.001,
+      "depth_meters": 2001.9999999999998,
+      "amplitude": 0.9960641988904277,
+      "confidence_score": 0.6,
+      "detection_method": "structural",
+      "method_agreement": 1,
+      "interpretation": "Detected via Structural high analysis Lower-confidence target requiring additional validation. May represent subtle geological feature."
+    },
+    {
+      "prospect_id": "P-03",
+      "trace_number": 1,
+      "time_seconds": 1.02,
+      "depth_meters": 2040.0,
+      "amplitude": 0.995176420659895,
+      "confidence_score": 0.75,
+      "detection_method": "structural",
+      "method_agreement": 2,
+      "interpretation": "Detected via Structural high analysis. Confirmed by 2 detection methods. Moderate-confidence target showing consistent response. Valid candidate for further analysis."
+    }
+  ],
+  "summary": {
+    "total_prospects": 3,
+    "high_confidence": 0,
+    "moderate_confidence": 1,
+    "average_confidence": 0.65,
+    "recommended_action": "Lower confidence prospects identified. Additional data acquisition and processing recommended."
+  }
+}
