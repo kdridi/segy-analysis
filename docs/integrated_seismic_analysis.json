@@ -1,0 +1,59 @@
+{
+  "analysis_metadata": {
+    "analyzer": "Integrated Seismic Analyzer",
+    "date": "2026-03-18",
+    "data_file": "sample_2d_hires.sgy"
+  },
+  "data_info": {
+    "num_traces": 50,
+    "num_samples": 2000,
+    "sample_interval_ms": 1.0
+  },
+  "qc_metrics": {
+    "pass_qc": true,
+    "missing_samples": 0,
+    "dead_traces": 0,
+    "signal_to_noise": 2.768596887588501
+  },
+  "prospects": [
+    {
+      "prospect_id": "P-01",
+      "trace_number": 30,
+      "time_seconds": 1.228,
+      "depth_meters": 2456.0,
+      "amplitude": 3.8940770626068115,
+      "confidence_score": 0.7,
+      "detection_method": "frequency",
+      "method_agreement": 1,
+      "interpretation": "Detected via Frequency/attribute analysis Moderate-confidence target showing consistent response."
+    },
+    {
+      "prospect_id": "P-02",
+      "trace_number": 1,
+      "time_seconds": 1.02,
+      "depth_meters": 2040.0,
+      "amplitude": 3.8042445182800293,
+      "confidence_score": 0.6,
+      "detection_method": "frequency",
+      "method_agreement": 1,
+      "interpretation": "Detected via Frequency/attribute analysis Lower-confidence target requiring validation."
+    },
+    {
+      "prospect_id": "P-03",
+      "trace_number": 28,
+      "time_seconds": 1.2,
+      "depth_meters": 2400.0,
+      "amplitude": 3.788308620452881,
+      "confidence_score": 0.6,
+      "detection_method": "frequency",
+      "method_agreement": 1,
+      "interpretation": "Detected via Frequency/attribute analysis Lower-confidence target requiring validation."
+    }
+  ],
+  "summary": {
+    "total_prospects": 3,
+    "high_confidence": 0,
+    "moderate_confidence": 1,
+    "average_confidence": 0.6333333333333333
+  }
+}
