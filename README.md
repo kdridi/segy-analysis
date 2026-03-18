@@ -4,7 +4,7 @@ Professional browser-based tools for SEG-Y seismic data visualization and proces
 
 ## 🌐 Live Demo
 
-Visit our landing page at: [https://your-username.github.io/repository-name](https://your-username.github.io/repository-name)
+Visit our landing page at: [https://kdridi.github.io/segy-analysis](https://kdridi.github.io/segy-analysis)
 
 ## ✨ Features
 
