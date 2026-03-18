@@ -21,6 +21,21 @@ Visit our landing page at: [https://kdridi.github.io/segy-analysis](https://kdri
 2. Click "Load Sample Data" to see a demo
 3. Or upload your own .sgy/.segy files
 
+## 📚 Documentation
+
+**New to seismic analysis?** Start here:
+
+- **📖 [Quick Start Guide](docs/QUICK_START.md)** - Get started in 5 minutes
+- **📚 [User Guide](docs/USER_GUIDE.md)** - Comprehensive beginner-friendly guide
+- **📊 [Understanding Results](docs/UNDERSTANDING_RESULTS.md)** - Interpret analysis reports
+
+**For developers and researchers:**
+
+- **🛠️ [CLI Tool Documentation](docs/CLI_TOOL_DOCUMENTATION.md)** - Python command-line tools
+- **🔬 [Seismic Pipeline Guide](docs/SEISMIC_PIPELINE_GUIDE.md)** - Processing workflows
+- **📖 [SEG-Y Processing Knowledge Base](docs/seg-y-processing-knowledge-base.md)** - Technical reference
+- **🎯 [Seismic Interpretation Framework](docs/seismic-interpretation-framework.md)** - Analysis methods
+
 ## 📁 Files
 
 - `index.html` - Landing page with information about SEG-Y tools
